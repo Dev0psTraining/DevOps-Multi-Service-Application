@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Monitoring Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .metric-unit {
+            font-size: 0.5em;
+            color: #999;
+            font-weight: normal;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status.healthy {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status.unhealthy {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .info-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .info-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #4b5563;
+            transition: background 0.2s;
+        }
+        
+        .link-item:hover {
+            background: #e5e7eb;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DevOps Monitoring Dashboard</h1>
+            <p>Real-time system metrics and health monitoring</p>
+        </div>
+        
+        <div id="error-message" class="error-message"></div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Service Health</div>
+                <div id="health-status" class="status">
+                    <span class="loading"></span>
+                </div>
+                <div id="uptime" class="metric-label" style="margin-top: 15px;"></div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Total Visits</div>
+                <div id="visits" class="metric-value">-</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Active Users</div>
+                <div id="users" class="metric-value">-</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">CPU Usage</div>
+                <div id="cpu" class="metric-value">-<span class="metric-unit">%</span></div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Memory Usage</div>
+                <div id="memory" class="metric-value">-<span class="metric-unit">%</span></div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Response Time</div>
+                <div id="response-time" class="metric-value">-<span class="metric-unit">ms</span></div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h2>System Links</h2>
+            <div class="links">
+                <a href="http://localhost:5001/health" class="link-item" target="_blank">
+                    🔧 Backend API
+                </a>
+                <a href="http://localhost:9090" class="link-item" target="_blank">
+                    📊 Prometheus
+                </a>
+                <a href="http://localhost:3001" class="link-item" target="_blank">
+                    📈 Grafana
+                </a>
+                <a href="http://localhost:5001/metrics" class="link-item" target="_blank">
+                    📉 Raw Metrics
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5001' 
+            : `http://${window.location.hostname}:5001`;
+        
+        let errorCount = 0;
+        
+        async function updateDashboard() {
+            try {
+                // Fetch health status
+                const healthResponse = await fetch(`${API_URL}/health`);
+                if (!healthResponse.ok) throw new Error('Health check failed');
+                
+                const healthData = await healthResponse.json();
+                
+                // Update health status
+                const healthStatus = document.getElementById('health-status');
+                healthStatus.textContent = healthData.status.toUpperCase();
+                healthStatus.className = `status ${healthData.status}`;
+                
+                // Update uptime
+                const uptimeMinutes = Math.floor(healthData.uptime / 60);
+                const uptimeHours = Math.floor(uptimeMinutes / 60);
+                const uptimeDisplay = uptimeHours > 0 
+                    ? `${uptimeHours}h ${uptimeMinutes % 60}m`
+                    : `${uptimeMinutes}m`;
+                document.getElementById('uptime').textContent = `Uptime: ${uptimeDisplay}`;
+                
+                // Fetch stats
+                const statsResponse = await fetch(`${API_URL}/api/stats`);
+                if (!statsResponse.ok) throw new Error('Stats fetch failed');
+                
+                const stats = await statsResponse.json();
+                
+                // Update metrics
+                document.getElementById('visits').innerHTML = stats.visits.toLocaleString();
+                document.getElementById('users').innerHTML = stats.users.toLocaleString();
+                document.getElementById('cpu').innerHTML = `${stats.cpu}<span class="metric-unit">%</span>`;
+                document.getElementById('memory').innerHTML = `${stats.memory}<span class="metric-unit">%</span>`;
+                document.getElementById('response-time').innerHTML = `${stats.responseTime}<span class="metric-unit">ms</span>`;
+                
+                // Clear error message
+                document.getElementById('error-message').style.display = 'none';
+                errorCount = 0;
+                
+            } catch (error) {
+                console.error('Dashboard update error:', error);
+                errorCount++;
+                
+                if (errorCount > 2) {
+                    const errorElement = document.getElementById('error-message');
+                    errorElement.textContent = `Connection error: Unable to reach backend API at ${API_URL}`;
+                    errorElement.style.display = 'block';
+                    
+                    // Update status to show error
+                    const healthStatus = document.getElementById('health-status');
+                    healthStatus.textContent = 'OFFLINE';
+                    healthStatus.className = 'status unhealthy';
+                }
+            }
+        }
+        
+        // Initial update
+        updateDashboard();
+        
+        // Update every 5 seconds
+        setInterval(updateDashboard, 5001);
+        
+        // Update time display
+        setInterval(() => {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            // You can add a time display if needed
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+---
+- name: Deploy DevOps Multi-Service Application
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  
+  vars:
+    project_path: "{{ playbook_dir }}/.."
+    compose_file: "{{ project_path }}/docker-compose.yml"
+    
+  tasks:
+    - name: Check system requirements
+      block:
+        - name: Check if Docker is installed
+          command: docker --version
+          register: docker_version
+          changed_when: false
+          
+        - name: Check if Docker Compose is installed  
+          command: docker-compose --version
+          register: compose_version
+          changed_when: false
+          
+        - name: Display versions
+          debug:
+            msg:
+              - "Docker: {{ docker_version.stdout }}"
+              - "Docker Compose: {{ compose_version.stdout }}"
+              
+    - name: Prepare environment
+      block:
+        - name: Create required directories
+          file:
+            path: "{{ item }}"
+            state: directory
+            mode: '0755'
+          loop:
+            - "{{ project_path }}/scan-results"
+            - "{{ project_path }}/docs/incident-logs"
+            - "{{ project_path }}/grafana/provisioning/datasources"
+            
+        - name: Make scripts executable
+          file:
+            path: "{{ project_path }}/scripts/{{ item }}"
+            mode: '0755'
+          loop:
+            - start.sh
+            - security-scan.sh
+            - incident-simulation.sh
+            
+    - name: Build and deploy services
+      block:
+        - name: Build Docker images
+          command: docker-compose build
+          args:
+            chdir: "{{ project_path }}"
+          register: build_result
+          
+        - name: Start services
+          command: docker-compose up -d
+          args:
+            chdir: "{{ project_path }}"
+          register: compose_result
+          
+        - name: Wait for services to be ready
+          pause:
+            seconds: 15
+            
+    - name: Verify deployment
+      block:
+        - name: Check backend health
+          uri:
+            url: http://localhost:5001/health
+            method: GET
+            status_code: 200
+          register: backend_health
+          retries: 5
+          delay: 5
+          
+        - name: Check frontend
+          uri:
+            url: http://localhost:3000
+            method: GET
+            status_code: 200
+          register: frontend_health
+          
+        - name: Check Prometheus
+          uri:
+            url: http://localhost:9090/-/healthy
+            method: GET
+            status_code: 200
+          register: prometheus_health
+          
+        - name: Display service status
+          debug:
+            msg:
+              - "✅ Backend API is healthy"
+              - "✅ Frontend is accessible"
+              - "✅ Prometheus is running"
+              - "✅ All services deployed successfully!"
+              
+    - name: Display access URLs
+      debug:
+        msg:
+          - "🎉 Deployment Complete!"
+          - "📊 Dashboard: http://localhost:3000"
+          - "🔧 API: http://localhost:5001/health"
+          - "📈 Prometheus: http://localhost:9090"
+          - "📊 Grafana: http://localhost:3001 (admin/admin)"
+          
